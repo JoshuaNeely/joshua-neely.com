@@ -1,37 +1,53 @@
 version: "3.2"
 
+volumes:
+  core_public:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.11
+      device: 192.168.1.11:/mnt/nfs/joshua-neely.com/core_public
+
+  blog_public:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.11
+      device: 192.168.1.11:/mnt/nfs/joshua-neely.com/blog_public
+
+  certbot_config:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.11
+      device: 192.168.1.11:/mnt/nfs/joshua-neely.com/certbot_config
+
+
 services:
     website_portal:
         network_mode: host
-        image: nginx
+
+        build: ./portal/
+        image: website_portal
+
         container_name: website_portal
 
         # reload config + certs every 6h
         # needed if certs are renewed in this time
         command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
+
         ports:
         - 80:80
         - 443:443
 
         volumes:
-        - type: bind
-          source: ./portal/nginx/nginx.conf
-          target: /etc/nginx/conf.d/default.conf
-
-        - type: bind
-          source: ./portal/nginx/htpasswd
-          target: /etc/nginx/conf.d/htpasswd
-
-        - type: bind
-          source: ./portal/data/certbot/conf
+        - type: volume
+          source: certbot_config
           target: /etc/letsencrypt
 
-        - type: bind
-          source: ./portal/data/certbot/www
-          target: /var/www/certbot
-
         depends_on:
+        - core_website
         - blog
 
 
@@ -43,27 +59,36 @@ services:
         entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
         volumes:
-        - type: bind
-          source: ./portal/data/certbot/conf
+        - type: volume
+          source: certbot_config
           target: /etc/letsencrypt
 
-        - type: bind
-          source: ./portal/data/certbot/www
-          target: /var/www/certbot
+
+    core_website:
+        build: ./core/
+        image: core_website
+
+        container_name: core_website
+
+        ports:
+        - 8082:80
+
+        volumes:
+        - type: volume
+          source: core_public
+          target: /usr/share/nginx/html
 
 
     blog:
-        image: nginx
+        build: ./blog/
+        image: website_blog
+
         container_name: blog_files
 
         ports:
         - 8081:80
 
         volumes:
-        - type: bind
-          source: ./blog/public
+        - type: volume
+          source: blog_public
           target: /usr/share/nginx/html
-
-        - type: bind
-          source: ./blog/blog-nginx.conf
-          target: /etc/nginx/conf.d/default.conf

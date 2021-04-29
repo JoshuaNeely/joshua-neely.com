@@ -52,7 +52,10 @@ services:
 
 
     certbot:
-        image: certbot/certbot
+        # certbot doesn't use a manifest for some reason, so selecting the architectue is not automatic
+        # I am using the rpi version by default here, since this is likely to run on my pi
+        #image: certbot/certbot
+        image: certbot/certbot:arm32v6-latest
         container_name: website_certbot
 
         # automatic cert renewal

@@ -38,8 +38,15 @@ services:
 
 
         ports:
-        - 80:80
-        - 443:443
+        - target: 80
+          published: 80
+          protocol: tcp
+          mode: host
+
+        - target: 443
+          published: 443
+          protocol: tcp
+          mode: host
 
         volumes:
         - type: volume
@@ -74,7 +81,10 @@ services:
         container_name: core_website
 
         ports:
-        - 8082:80
+        - target: 80
+          published: 8082
+          protocol: tcp
+          mode: host
 
         volumes:
         - type: volume
@@ -89,7 +99,10 @@ services:
         container_name: blog_files
 
         ports:
-        - 8081:80
+        - target: 80
+          published: 8081
+          protocol: tcp
+          mode: host
 
         volumes:
         - type: volume
